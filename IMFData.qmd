@@ -1,0 +1,423 @@
+---
+title: 'IMFData.jl'
+author: stephenbnicar
+execute:
+  echo: true
+format:
+  html:
+      code-fold: true
+      code-tools: true
+      toc: true
+      echo: true
+keep-ipynb: true
+jupyter: julia-1.10
+---
+
+[Code](https://github.com/stephenbnicar/IMFData.jl)
+
+[Examples](https://github.com/stephenbnicar/IMFData.jl/blob/master/examples/examples.jl)
+
+```{julia}
+#import Pkg; Pkg.add("IMFData")
+using CSV, DataFrames, DataFramesMeta, IMFData
+
+wd = @__DIR__
+```
+
+# General Functions
+
+## Get a list of datasets accessible from the API
+
+Note: While the function `get_imf_datasets()` returns a list of all available datasets, currently the module only supports data requests from the International Financial Statistics (IFS) dataset.
+
+```{julia}
+# Get a list of datasets accessible from the API:
+data = IMFData.get_imf_datasets()
+names(data)
+data = DataFrames.DataFrame(
+    dataset_id = data.dataset_id,
+    dataset_name = data.dataset_name)
+
+df = DataFrames.DataFrame([[],[]], ["dataset_id", "dataset_name"])
+for i in 1:size(data)[1]
+    push!(df, (data[i,1],data[i,2]))
+end
+df.dataset_id = string.(df.dataset_id)
+df.dataset_name = string.(df.dataset_name)
+CSV.write(
+    wd * "/IMFDatasets.csv",
+    delim = ";",
+    df)
+```
+
+## Get the list of parameters ("dimensions") for a dataset and their values
+
+```{julia}
+# ifs_structure = get_imf_datastructure("IFS")
+```
+
+### Parameter Names
+
+```{julia}
+# collect(values(ifs_structure))[1]
+```
+
+### Parameter Values
+
+```{julia}
+# collect(values(ifs_structure))[2]
+```
+
+1. "CL_UNIT_MULT"
+
+```{julia}
+# collect(collect(values(ifs_structure))[2])[2]
+```
+
+2. "CL_FREQ"
+
+```{julia}
+# collect(collect(values(ifs_structure))[2])[5]
+```
+
+3. "CL_AREA_IFS"
+
+```{julia}
+# collect(collect(values(ifs_structure))[2])[4]
+```
+
+4. "CL_INDICATOR_IFS"
+
+```{julia}
+# collect(collect(values(ifs_structure))[2])[1]
+```
+
+5. "CL_TIME_FORMAT"
+
+```{julia}
+# collect(collect(values(ifs_structure))[2])[3]
+```
+
+## Filter Datasets by Key
+
+```{julia}
+datasets = IMFData.get_imf_datasets()
+# Use @where macro from DataFramesMeta to filter based on dataset name
+#ds_ifs = @where(datasets, occursin.("IFS", :dataset_id))
+ds_ifs = DataFramesMeta.@subset(datasets, occursin.("IFS", :dataset_id))
+```
+
+```{julia}
+#ds_dot = @where(datasets, occursin.("DOT", :dataset_id))
+ds_dot = DataFramesMeta.@subset(datasets, occursin.("DOT", :dataset_id))
+```
+
+# Retrieve data from the IFS dataset
+
+## With one request:
+
+```{julia}
+us_gdp = get_ifs_data("US", "NGDP_SA_XDC", "Q", 1900, 2100)
+```
+
+```{julia}
+us_gdp.series
+```
+
+## With multiple requests:
+
+```{julia}
+countries = ["US","CA"]
+indicators = ["NGDP_SA_XDC"]
+us_ca_gdp = get_ifs_data(countries, indicators, "Q", 1900, 2100)
+```
+
+```{julia}
+us_ca_gdp[1].series
+```
+
+```{julia}
+us_ca_gdp[2].series
+```
+
+```{julia}
+# Pasar a DataFrame
+df = []
+dftemp = []
+i = 1
+for i in 1:size(countries)[1]
+    dftemp = us_ca_gdp[i].series;
+    dftemp[:,:country] .= countries[i];
+    dftemp[:,:indicator] .= indicators[1];
+    df = push!(df,dftemp)
+end
+df = vcat(df...)
+```
+
+# Examples
+
+## IFS indicators
+
+### Indicators: "CL_INDICATOR_IFS"
+
+```{julia}
+ifs_structure  = get_imf_datastructure("IFS")
+ifs_indicators = ifs_structure["Parameter Values"]["CL_INDICATOR_IFS"]
+```
+
+```{julia}
+ifs_indicators.parameter_value
+```
+
+```{julia}
+ifs_indicators.description
+```
+
+```{julia}
+CSV.write(
+    wd * "/IFS_Indicators.csv",
+    delim = ";",
+    ifs_indicators)
+```
+
+### Units: "CL_UNIT_MULT"
+
+```{julia}
+ifs_units = ifs_structure["Parameter Values"]["CL_UNIT_MULT"]
+```
+
+```{julia}
+ifs_units.description
+```
+
+### Time Format: "CL_TIME_FORMAT"
+
+```{julia}
+ifs_time = ifs_structure["Parameter Values"]["CL_TIME_FORMAT"]
+```
+
+```{julia}
+ifs_time.description
+```
+
+### Countries: "CL_AREA_IFS"
+
+```{julia}
+ifs_countries = ifs_structure["Parameter Values"]["CL_AREA_IFS"]
+ifs_countries.description
+CSV.write(
+    wd * "/IFS_Countries.csv",
+    delim = ";",
+    ifs_countries)
+```
+
+### frequency: "CL_FREQ"
+
+```{julia}
+ifs_frequency = ifs_structure["Parameter Values"]["CL_FREQ"]
+```
+
+```{julia}
+ifs_frequency.description
+```
+
+## One Country, One Indicator
+
+```{julia}
+indicators = "NGDP_SA_XDC"
+countries  = "US"
+us_gdp = get_ifs_data(countries, indicators, "Q", 1900, 2100)
+```
+
+```{julia}
+us_gdp.series
+```
+
+```{julia}
+us_gdp.indicator
+```
+
+```{julia}
+us_gdp.frequency
+```
+
+## Availability of Data
+
+```{julia}
+indic = "NGDP_SA_XDC"
+area  = "US"
+data_available = get_ifs_data(area, indic, "Q", 1900, 2100)
+```
+
+```{julia}
+data_not_available = get_ifs_data(area, indic, "M", 1900, 2100)
+```
+
+```{julia}
+data_not_defined = get_ifs_data(area, "NGDP_SA", "Q", 1900, 2100)
+```
+
+## Filter Indicators
+
+```{julia}
+ifs_indicators = ifs_structure["Parameter Values"]["CL_INDICATOR_IFS"]
+#gdp_indicators = @where(
+gdp_indicators = @subset(
+	ifs_indicators,
+	occursin.("Gross Domestic Product", :description),
+	occursin.("Domestic Currency", :description))
+```
+
+```{julia}
+indicators = gdp_indicators[2,1]
+countries  = "US"
+us_gdp = get_ifs_data(countries, indicators, "Q", 1900, 2100)
+```
+
+```{julia}
+us_gdp.series
+```
+
+## Many Countries, One Indicator
+
+```{julia}
+function get_df(x)
+    try
+        df = countries_indicators[x].series
+        df.country .= countries_indicators[x].area
+        df.indicator .= countries_indicators[x].indicator
+        df.frequency .= countries_indicators[x].frequency
+        return df
+    catch
+        return DataFrames.DataFrame()
+    end
+end
+```
+
+```{julia}
+indicators = "NGDP_SA_XDC"
+countries  = ["US","CA","MX"]
+countries_indicators = get_ifs_data(countries, indicators, "Q", 1900, 2100)
+```
+
+```{julia}
+size(countries_indicators)[1]
+```
+
+```{julia}
+get_df(3)
+```
+
+```{julia}
+ndf = size(countries_indicators)[1]
+df = map(_ -> DataFrames.DataFrame(), 1:ndf)
+df = vcat([df[i] = get_df(i) for i in 1:ndf]...)
+CSV.write(
+    wd * "/IMFData.csv",
+    delim = ";",
+    df)
+```
+
+## Many Countries, Many Indicators
+
+```{julia}
+ifs_indicators = ifs_structure["Parameter Values"]["CL_INDICATOR_IFS"]
+countries  = ["GT","HN","SV","NI","CR","PA"]
+#gdp_indicators = @where(
+gdp_indicators = DataFramesMeta.@subset(
+	ifs_indicators,
+	DataFrames.occursin.("Gross Domestic Product", :description),
+	DataFrames.occursin.("Domestic Currency", :description))
+indicators = gdp_indicators[!,1]
+countries_indicators = get_ifs_data(countries, indicators, "Q", 1900, 2100)
+```
+
+```{julia}
+countries_indicators[3].series
+```
+
+```{julia}
+ndf = size(countries_indicators)[1]
+df = map(_ -> DataFrames.DataFrame(), 1:ndf)
+[df[i] = get_df(i) for i in 1:ndf]
+df = vcat(df...)
+CSV.write(
+    wd * "/IMFData_query.csv",
+    delim = ";",
+    df)
+df
+```
+
+
+```{julia}
+ifs_indicators = ifs_structure["Parameter Values"]["CL_INDICATOR_IFS"]
+countries  = ["GT","HN","SV","NI","CR","PA"]
+indicators = ["NGDP_SA_XDC","NI_SA_XDC"]
+countries_indicators = get_ifs_data(countries, indicators, "Q", 1900, 2100)
+ndf = size(countries_indicators)[1]
+df = map(_ -> DataFrames.DataFrame(), 1:ndf)
+[df[i] = get_df(i) for i in 1:ndf]
+df = vcat(df...)
+CSV.write(
+    wd * "/IMFData_query.csv",
+    delim = ";",
+    df)
+df
+```
+
+# Examples from the original file
+
+```{julia}
+datasets = IMFData.get_imf_datasets()
+```
+
+
+
+```{julia}
+# Use @where macro from DataFramesMeta to filter based on dataset name
+ds_ifs = DataFramesMeta.@subset(datasets, DataFrames.occursin.("IFS", :dataset_id))
+```
+
+
+
+```{julia}
+ds_dot = DataFramesMeta.@subset(datasets, DataFrames.occursin.("DOT", :dataset_id))
+```
+
+
+
+```{julia}
+ifs_structure  = IMFData.get_imf_datastructure("IFS")
+```
+
+## Search for GDP indicators
+
+```{julia}
+ifs_indicators = ifs_structure["Parameter Values"]["CL_INDICATOR_IFS"]
+gdp_indicators = DataFramesMeta.@subset(
+    ifs_indicators,
+    DataFrames.occursin.("Gross Domestic Product", :description),
+    DataFrames.occursin.("Domestic Currency", :description))
+CSV.write(wd * "/ifs_gdp_indicators.csv", gdp_indicators; delim='\t')
+```
+
+## Availability of Data
+
+```{julia}
+indic = "NGDP_SA_XDC"
+area  = "US"
+data_available = IMFData.get_ifs_data(area, indic, "Q", 1900, 2100)
+```
+
+
+
+```{julia}
+data_not_available = get_ifs_data(area, indic, "M", 1900, 2100)
+```
+
+
+
+```{julia}
+data_not_defined = get_ifs_data(area, "NGDP_SA", "Q", 1900, 2100)
+```
+
