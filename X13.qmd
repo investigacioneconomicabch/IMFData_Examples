@@ -1,0 +1,505 @@
+---
+title: 'Interface de X13'
+author: Elvis Casco
+execute:
+  echo: false
+  warning: false
+format: 
+  html:
+    toc: true
+    toc-depth: 7
+    warnings: false
+    warning: false
+    message: false
+    echo: true
+    code-tools:
+      source: false
+      toggle: false
+      caption: none
+    code-fold: true
+keep-ipynb: true
+lang: es
+jupyter: julia-1.10
+---
+
+# Librerías
+
+```{julia}
+using DataFrames,X13
+
+wd = @__DIR__;
+# include(wd * "/functions/fn_process.jl");
+# include(wd * "/functions/fn_get_data.jl");
+```
+
+```{julia}
+ta = X13.sample_ts('q')
+ta_x13 = x13(ta)
+```
+
+```{julia}
+seas = X13.season_adjust(ta)
+```
+
+```{julia}
+################## Componentes ###################
+# Rtblnames  a1         b1         backcast   c17
+# d10        d11        d12        d13        d16
+# d8         d9         dg         e2         file
+# forecast   otl        sp0        sp1        sp2
+# spr        tblnames   td
+#=
+https://cran.r-project.org/web/packages/x12/x12.pdf
+a1: Object of class "ts" - the original time series.
+b1: Object of class "ts" - the prior adjusted original series.
+backcast: Object of class "fbcast" - the point backcasts with prediction intervals
+c17: Object of class "ts" - the final weights for the irregular component.
+d10: Object of class "ts" - the final seasonal factors.
+d11: Object of class "ts" - the final seasonally adjusted data.
+d12: Object of class "ts" - the final trend cycle.
+d13: Object of class "ts" - the final irregular components.
+d16: Object of class "ts" - the combined adjustment factors.
+d8: Object of class "ts" - the final unmodified SI ratios.
+d9: Object of class "ts" - the final replacements for the SI ratios.
+dg: Object of class "list", 
+    containing several seasonal adjustment and regARIMA modeling diagnostics, i.e.:
+    x11regress, transform, samode, seasonalma, trendma, arimamdl, automdl, regmdl, nout,
+    nautoout, nalmostout, almostoutlier, crit,outlier, userdefined, autooutlier, peaks.seas,
+    peaks.td, id.seas, id.rsdseas, spcrsd, spcori, spcsa, spcirr, m1, m2, m3, m4, m5,
+    m6,m7, m8, m9, m10, m11, q, q2, nmfail, loglikelihood, aic, aicc, bic, hq, aape, autotransform, ifout, rsd.acf, rsd.pacf, rsd.acf2,tsName, frequency, span,...
+e2: Object of class "ts" - the differenced, transformed, seasonally adjusted data.
+file: Object of class "character" - path to the output directory and filename
+forecast: Object of class "fbcast" - the point forecasts with prediction intervals
+otl: Object of class "tsOrNULL" - the outlier regression series
+sp0: Object of class "spectrum" - the spectrum of the original series.
+sp1: Object of class "spectrum" - the spectrum of the differenced seasonally adjusted series.
+sp2: Object of class "spectrum" - the spectrum of modified irregular series.
+spr: Object of class "spectrum" - the spectrum of the regARIMA model residuals.
+tblnames: Object of class "character" - tables read into R
+td: Object of class "tsOrNULL" - the trading day component
+Rtblnames: Object of class "character" - names of tables read into R
+=#
+```
+
+```{julia}
+# a1: Object of class "ts" - the original time series.
+d1 = DataFrames.DataFrame(x13(ta).a1)
+d2 = DataFrames.DataFrame(ta)
+DataFrames.leftjoin(
+  d1,d2,
+  on=:timestamp,
+  makeunique=true)
+```
+
+```{julia}
+# b1: Object of class "ts" - the prior adjusted original series.
+d1 = DataFrames.DataFrame(x13(ta).b1)
+d2 = DataFrames.DataFrame(ta)
+DataFrames.leftjoin(
+  d1,d2,
+  on=:timestamp,
+  makeunique=true)
+```
+
+```{julia}
+# backcast: Object of class "fbcast" - the point backcasts with prediction intervals
+x13(ta).backcast
+```
+
+```{julia}
+# c17: Object of class "ts" - the final weights for the irregular component.
+d1 = DataFrames.DataFrame(x13(ta).c17)
+d2 = DataFrames.DataFrame(ta)
+DataFrames.leftjoin(
+  d1,d2,
+  on=:timestamp,
+  makeunique=true)
+```
+
+```{julia}
+# d10: Object of class "ts" - the final seasonal factors.
+d1 = DataFrames.DataFrame(x13(ta).d10)
+d2 = DataFrames.DataFrame(ta)
+DataFrames.leftjoin(
+  d1,d2,
+  on=:timestamp,
+  makeunique=true)
+```
+
+```{julia}
+# d11: Object of class "ts" - the final seasonally adjusted data.
+d1 = DataFrames.DataFrame(x13(ta).d11)
+d2 = DataFrames.DataFrame(ta)
+DataFrames.leftjoin(
+  d1,d2,
+  on=:timestamp,
+  makeunique=true)
+```
+
+```{julia}
+# d12: Object of class "ts" - the final trend cycle.
+d1 = DataFrames.DataFrame(x13(ta).d12)
+d2 = DataFrames.DataFrame(ta)
+DataFrames.leftjoin(
+  d1,d2,
+  on=:timestamp,
+  makeunique=true)
+```
+
+```{julia}
+# d13: Object of class "ts" - the final irregular components.
+d1 = DataFrames.DataFrame(x13(ta).d13)
+d2 = DataFrames.DataFrame(ta)
+DataFrames.leftjoin(
+  d1,d2,
+  on=:timestamp,
+  makeunique=true)
+```
+
+```{julia}
+# d16: Object of class "ts" - the combined adjustment factors.
+d1 = DataFrames.DataFrame(x13(ta).d16)
+d2 = DataFrames.DataFrame(ta)
+DataFrames.leftjoin(
+  d1,d2,
+  on=:timestamp,
+  makeunique=true)
+```
+
+```{julia}
+# d8: Object of class "ts" - the final unmodified SI ratios.
+d1 = DataFrames.DataFrame(x13(ta).d8)
+d2 = DataFrames.DataFrame(ta)
+DataFrames.leftjoin(
+  d1,d2,
+  on=:timestamp,
+  makeunique=true)
+```
+
+```{julia}
+# d9: Object of class "ts" - the final replacements for the SI ratios.
+d1 = DataFrames.DataFrame(x13(ta).d9)
+d2 = DataFrames.DataFrame(ta)
+DataFrames.leftjoin(
+  d1,d2,
+  on=:timestamp,
+  makeunique=true)
+```
+
+```{julia}
+# dg: Object of class "list", 
+#     containing several seasonal adjustment and regARIMA modeling diagnostics, i.e.:
+#     x11regress, transform, samode, seasonalma, trendma, arimamdl, automdl, regmdl, nout,
+#     nautoout, nalmostout, almostoutlier, crit,outlier, userdefined, 
+#     autooutlier, peaks.seas,
+#     peaks.td, id.seas, id.rsdseas, spcrsd, spcori, spcsa, spcirr, m1, m2, m3, m4, m5,
+#     m6,m7, m8, m9, m10, m11, q, q2, nmfail, loglikelihood, aic, aicc, bic, 
+#     hq, aape, autotransform, ifout, rsd.acf, rsd.pacf, rsd.acf2,tsName, frequency, span,...
+dg = x13(ta).dg
+```
+
+```{julia}
+dg[:samode]
+```
+
+```{julia}
+dg[:automdl]
+```
+
+```{julia}
+# e2: Object of class "ts" - the differenced, transformed, seasonally adjusted data.
+d1 = DataFrames.DataFrame(x13(ta).e2)
+d2 = DataFrames.DataFrame(ta)
+DataFrames.leftjoin(
+  d1,d2,
+  on=:timestamp,
+  makeunique=true)
+```
+
+```{julia}
+# file: Object of class "character" - path to the output directory and filename
+x13(ta).file
+```
+
+```{julia}
+# forecast: Object of class "fbcast" - the point forecasts with prediction intervals
+x13(ta).forecast.estimate
+```
+
+```{julia}
+x13(ta).forecast.lowerci
+```
+
+```{julia}
+x13(ta).forecast.upperci
+```
+
+```{julia}
+# otl: Object of class "tsOrNULL" - the outlier regression series
+x13(ta).otl
+# d1 = DataFrames.DataFrame(x13(ta).otl)
+# d2 = DataFrames.DataFrame(ta)
+# DataFrames.leftjoin(
+#   d1,d2,
+#   on=:timestamp,
+#   makeunique=true)
+```
+
+```{julia}
+# sp0: Object of class "spectrum" - the spectrum of the original series.
+x13(ta).sp0
+```
+
+```{julia}
+# sp1: Object of class "spectrum" - the spectrum of the differenced seasonally adjusted series.
+x13(ta).sp1
+```
+
+```{julia}
+# sp2: Object of class "spectrum" - the spectrum of modified irregular series.
+x13(ta).sp2
+```
+
+```{julia}
+# spr: Object of class "spectrum" - the spectrum of the regARIMA model residuals.
+x13(ta).spr
+```
+
+```{julia}
+# tblnames: Object of class "character" - tables read into R
+x13(ta).tblnames
+```
+
+```{julia}
+# td: Object of class "tsOrNULL" - the trading day component
+x13(ta).td
+# d1 = DataFrames.DataFrame(x13(ta).td)
+```
+
+```{julia}
+# Rtblnames: Object of class "character" - names of tables read into R
+x13(ta).Rtblnames
+```
+
+```{julia}
+nombres = DataFrames.DataFrame(
+  Tabla = x13(ta).tblnames,
+  Nombre = x13(ta).Rtblnames)
+```
+
+a1: Object of class "ts" - the original time series.
+d10: Object of class "ts" - the final seasonal factors.
+d11: Object of class "ts" - the final seasonally adjusted data.
+d12: Object of class "ts" - the final trend cycle.
+d13: Object of class "ts" - the final irregular components.
+d16: Object of class "ts" - the combined adjustment factors.
+c17: Object of class "ts" - the final weights for the irregular component.
+d9: Object of class "ts" - the final replacements for the SI ratios.
+e2: Object of class "ts" - the differenced, transformed, seasonally adjusted data.
+d8: Object of class "ts" - the final unmodified SI ratios.
+b1: Object of class "ts" - the prior adjusted original series.
+td: Object of class "tsOrNULL" - the trading day component
+otl: Object of class "tsOrNULL" - the outlier regression series
+
+```{julia}
+Dict(Pair.(nombres.Tabla, nombres.Nombre))
+```
+
+
+
+```{julia}
+leftjoin(
+  DataFrames.DataFrame(x13(ta).a1),
+  DataFrames.DataFrame(x13(ta).d11),
+  # DataFrames.DataFrame(x13(ta).d12),
+  # x13(ta).d13,
+  # x13(ta).d16,
+  on=:timestamp,
+  makeunique=true)
+```
+
+
+
+```{julia}
+
+```
+
+
+
+```{julia}
+
+```
+
+
+
+```{julia}
+
+```
+
+
+
+```{julia}
+
+```
+
+
+
+```{julia}
+
+```
+
+
+
+```{julia}
+
+```
+
+
+
+```{julia}
+
+```
+
+
+
+```{julia}
+
+```
+
+
+
+```{julia}
+
+```
+
+
+
+```{julia}
+
+```
+
+
+
+```{julia}
+
+```
+
+
+
+```{julia}
+
+```
+
+
+
+```{julia}
+
+```
+
+
+
+```{julia}
+
+```
+
+
+
+```{julia}
+
+```
+
+
+
+```{julia}
+
+```
+
+
+
+```{julia}
+
+```
+
+
+
+```{julia}
+
+```
+
+
+
+```{julia}
+
+```
+
+
+
+```{julia}
+
+```
+
+
+
+```{julia}
+
+```
+
+
+
+```{julia}
+
+```
+
+
+
+```{julia}
+
+```
+
+
+
+```{julia}
+
+```
+
+
+
+```{julia}
+
+```
+
+
+
+```{julia}
+
+```
+
+
+
+```{julia}
+
+```
+
+
+
+```{julia}
+
+```
+
+
+
+```{julia}
+
+```
+
+
+
+```{julia}
+
+```
+
+
+
+```{julia}
+
+```
